@@ -186,7 +186,7 @@ class Node(ElementTree.ElementTree):
         """Return the top-level ancestor of the node"""
 
         if not self.parent_node:
-            return
+            return self
         else:
             return self.parent_node.find_adam()
 
