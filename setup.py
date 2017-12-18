@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="just_talk",
-    version="0.1.1",
+    version="0.1.2",
     author="Matthew Rademaker",
     author_email="matthew@acctv.com.au",
     description="Python package to use the TOA comms protocol",
