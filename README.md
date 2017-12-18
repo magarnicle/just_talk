@@ -3,9 +3,6 @@ Matthew Rademaker
 
 matthew@acctv.com.au
 
-## Date ##
-2017-03-21
-
 ## Context ##
 To provide a python model of the Tools On Air Broadcast API For use with the Tools On Air suite of programs.
 
