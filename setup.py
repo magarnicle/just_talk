@@ -8,7 +8,7 @@ from setuptools import setup
 
 setup(
     name="just_talk",
-    version="0.1.2",
+    version="0.1.3",
     author="Matthew Rademaker",
     author_email="matthew@acctv.com.au",
     description="Python package to use the TOA comms protocol",
@@ -18,6 +18,7 @@ setup(
     download_url="https://github.com/magarnicle/just_talk/archive/00.01.01.tar.gz",
     packages=['just_talk'],
     package_data={'just_talk': ['xml/*']},
+    install_requires=['pymediainfo']
     classifiers=["Development Status :: 4 - Beta",
         "Environment :: MacOS X",
         "Intended Audience :: Telecommunications Industry",
