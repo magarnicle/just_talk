@@ -252,6 +252,9 @@ class Node(ElementTree.ElementTree):
 
         return matches
 
+    def new_child_check(self):
+        """Perform any checks needed when a new child is added"""
+        pass
 
 class Day(Node):
     """TOA Day node"""
@@ -287,6 +290,20 @@ class Day(Node):
             return self.__dict__[name]
         else:
             super(Day, self).__getattr__(name)
+
+    def setup(self, video):
+        """If this day has no playlists, here's an easy way to create
+        a proper playlist with the given video, starting at midnight."""
+        if not self.playlists:
+            pl = Playlist(nid=1)
+            t = VideoTrack(nid=1)
+            p = Play(nid=1)
+            p.resource = (0, video)
+            t.plays.append(p)
+            pl.video_tracks.append(t)
+            pl.refresh(auto_update=False)
+            pl.toaStart = self.toaStart
+            self.playlists.append(pl)
 
     def time_out(self):
         global _AUTO_TIMEOUT
@@ -393,6 +410,42 @@ class Playlist(Node):
         self.toaDuration = toaTimecode.fromdatetime(
             (_YEAR_ZERO + timedelta(seconds=seconds, microseconds=microseconds)))
         _AUTO_TIMEOUT = saved_timeout_setting
+
+    def new_child_check(self):
+        """Check that all tracks have unique track_ids."""
+        checked = []
+        blank = []
+        for t in self.graphic_tracks:
+            if t.track_id:
+                if t.track_id in checked:
+                    raise ValueError("tracks have duplicate ids")
+                checked.append(t.track_id)
+            else:
+                blank.append(t)
+
+        for t in self.video_tracks:
+            if t.track_id:
+                if t.track_id in checked:
+                    raise ValueError("tracks have duplicate ids")
+                checked.append(t.track_id)
+            else:
+                blank.append(t)
+
+        g = 0
+        v = 0
+        for t in blank:
+            if isinstance(t, GraphicTrack):
+                while 'g' + str(g) in checked:
+                    g += 1
+                t.track_id = 'g' + str(g)
+            else:
+                while 'v' + str(g) in checked:
+                    v += 1
+                t.track_id = 'v' + str(v)
+            checked.append(t.track_id)
+            
+
+
 
 
 class ChannelTrack():
@@ -521,6 +574,8 @@ class Play(Node):
         media_info = MediaInfo.parse(path)
         media_info.to_data()
 
+        self.toaName = self.toaName if self.toaName != 'None' else os.path.basename(path)
+
         # Check stats for videos
         if self.resource[0] == 0:
             try:
@@ -543,15 +598,17 @@ class Play(Node):
 
                 # Keep out point relative to the end, just in case the duration changes.
                 # It would be silly to leave the outpoint at the end of the old duration.
-                outpoint_from_end = self.toaNaturalDuration - self.toaOutPoint
+                outpoint_from_end = self.toaNaturalDuration - self.toaOutPoint if self.toaNaturalDuration else timedelta(seconds=0)
                 duration = float(media_info.tracks[0].duration)
                 seconds = duration / 1000
                 self.toaNaturalDuration = int(seconds * FPS)
-                self.toaOutPoint = toaNaturalDuration - outpoint_from_end
+                self.toaOutPoint = self.toaNaturalDuration - outpoint_from_end
 
                 # enforce toaInPoint <= toaOutPoint <= toaNaturalDuration
                 if self.toaOutPoint > self.toaNaturalDuration:
                     self.toaOutPoint = self.toaNaturalDuration
+                if not self.toaInPoint:
+                    self.toaInPoint = 0
                 if self.toaInPoint > self.toaOutPoint:
                     self.toaInPoint = self.toaOutPoint
                 self.toaDuration = toaTimecode.fromdatetime(
@@ -1140,6 +1197,7 @@ class JTList():
             else:
                 root.append(item.getroot())
                 item.parent_node = self.parent_node
+                self.parent_node.new_child_check()
                 self.parent_node.time_out()
 
 
